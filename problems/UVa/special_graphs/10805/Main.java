@@ -1,14 +1,21 @@
 /*input
-1
-6 7
+2
+4 4
 0 1
-0 3
-0 4
 1 2
 2 3
-2 5
-3 4
+3 0
+5 7
+0 1
+1 4
+0 2
+1 2
+1 3
+4 3
+2 3
 */
+
+//https://codeforces.com/blog/entry/82538
 import java.util.*;
 import java.io.*;
 
@@ -24,55 +31,43 @@ public class Main {
             e.printStackTrace();
         }
     }
+    static class Pair {
+        int first, second;
+        Pair(int first, int second) {
+            this.first = first; this.second = second;
+        }
+    }
 
     static final int inf = (int)2e8;
 
     static int n;
-    static int[] dist;
-    static ArrayList<Integer>[] adj, tree;
+    static int[][] dist;
+    static Pair[] edges;
 
-    static int endpoint, maxDist;
-    static void dfs(int u, int p, int depth) {
-        if (depth > maxDist) {
-            maxDist = depth;
-            endpoint = u;
-        }
-        for (Integer v: tree[u]) 
-            if (v != p) dfs(v, u, depth + 1);
-    }
-    static int bfs(int root) {
-        tree = new ArrayList[n];
-        for (int i = 0; i < n; i++) tree[i] = new ArrayList<>();
-
-        dist = new int[n]; Arrays.fill(dist, inf);
-        dist[root] = 0;
-        Queue<Integer> queue = new LinkedList<>();
-        queue.add(root);
-
-        endpoint = -1; maxDist = -1;
-        while (!queue.isEmpty()) {
-            int u = queue.poll();
-            for (Integer v: adj[u]) {
-                if (dist[v] == inf) {
-                    dist[v] = dist[u] + 1;
-                    if (dist[v] > maxDist) {
-                        maxDist = dist[v];
-                        endpoint = v;
-                    }
-
-                    tree[u].add(v);
-                    tree[v].add(u);
-                    queue.add(v);
-                }
-            }
-        }
-
-        dfs(endpoint, -1, 0);
-        return maxDist;
+    static void floyd() {
+        for (int k = 0; k < n; k++)
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                    dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
     }
     static int solve() {
+        floyd();
         int ans = inf;
-        for (int i = 0; i < n; i++) ans = Math.min(ans, bfs(i));
+
+        // Case 1: the center of MDST in vertex
+        for (int u = 0; u < n; u++) {
+            int maxDist = 0;
+            for (int v = 0; v < n; v++) maxDist = Math.max(maxDist, dist[u][v]);
+            ans = Math.min(ans, maxDist * 2);
+        }
+
+        // Case 2: the center of MDST in edge
+        for (Pair e: edges) {
+            int maxDist = 0;
+            for (int v = 0; v < n; v++) maxDist = Math.max(maxDist, Math.min(dist[e.first][v], dist[e.second][v]));
+            ans = Math.min(ans, maxDist * 2 + 1);
+        }
+
         return ans;
     }
     	
@@ -83,11 +78,16 @@ public class Main {
         int numTests = inp.nextInt();
        	for (int test = 1; test <= numTests; test++) {
         	n = inp.nextInt(); int m = inp.nextInt();
-        	adj = new ArrayList[n];
-            for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();
-        	while (m-- > 0) {
+        	dist = new int[n][n];
+            for (int i = 0; i < n; i++) {
+                Arrays.fill(dist[i], inf);
+                dist[i][i] = 0;
+            }
+            edges = new Pair[m];
+        	for (int i = 0; i < m; i++) {
         		int u = inp.nextInt(), v = inp.nextInt();
-        		adj[u].add(v); adj[v].add(u);
+        		dist[u][v] = 1; dist[v][u] = 1;
+                edges[i] = new Pair(u, v);
         	}
         	System.out.println("Case #" + test + ":\n" + solve() + "\n");
         }
